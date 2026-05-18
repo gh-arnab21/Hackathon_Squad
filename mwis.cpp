@@ -2,159 +2,113 @@
 #pragma GCC target("avx2,bmi,bmi2,lzcnt,popcnt")
 #include <iostream>
 #include <vector>
-#include <numeric>
 #include <algorithm>
 #include <chrono>
-
 using namespace std;
 
-uint64_t rng_state = 1337;
-inline uint32_t fast_rand() {
-    rng_state ^= rng_state << 13;
-    rng_state ^= rng_state >> 7;
-    rng_state ^= rng_state << 17;
-    return rng_state;
+uint32_t rst = 1337;
+inline uint32_t fr() {
+    rst ^= rst << 13;
+    rst ^= rst >> 17;
+    rst ^= rst << 5;
+    return rst;
 }
 
 int main(int argc, char** argv) {
-    ios::sync_with_stdio(0);
-    cin.tie(0);
-    
-    int time_limit = 295;
-    if (argc > 1) time_limit = atoi(argv[1]);
-    
-    auto t0 = chrono::steady_clock::now();
+    ios::sync_with_stdio(0); cin.tie(0);
+    int tl = 295;
+    if (argc > 1) tl = atoi(argv[1]);
     int n, m;
     if (!(cin >> n >> m)) return 0;
-    
     vector<long long> s(n + 1);
     for (int i = 1; i <= n; ++i) cin >> s[i];
-    
-    vector<int> head(n + 2, 0);
-    vector<pair<int, int>> edges(m);
+    vector<vector<int>> g(n + 1);
     for (int i = 0; i < m; ++i) {
-        cin >> edges[i].first >> edges[i].second;
-        head[edges[i].first + 1]++;
-        head[edges[i].second + 1]++;
+        int u, v; cin >> u >> v;
+        g[u].push_back(v);
+        g[v].push_back(u);
     }
-    for (int i = 1; i <= n; ++i) head[i + 1] += head[i];
-    
-    vector<int> to(m * 2);
-    vector<int> cur_head = head;
-    for (int i = 0; i < m; ++i) {
-        int u = edges[i].first, v = edges[i].second;
-        to[cur_head[u]++] = v;
-        to[cur_head[v]++] = u;
-    }
-    
-    vector<int> in(n + 1, 0), best_in(n + 1, 0), cc(n + 1, 0), cxor(n + 1, 0), aq;
-    aq.reserve(n + 1);
-    long long cur_score = 0, best_score = 0;
-    
-    auto add = [&](int u) {
-        in[u] = 1;
-        cur_score += s[u];
-        for (int i = head[u]; i < head[u + 1]; ++i) {
-            int v = to[i];
-            cc[v]++;
-            cxor[v] ^= u;
+    vector<double> beta(n + 1);
+    for (int i = 1; i <= n; ++i) beta[i] = (double)s[i] / (g[i].size() + 1.0);
+    vector<int> ord(n + 1), in_F(n + 1, 0), F_n, vs(n + 1, 0), bfs, par(n + 1, 0), ex(n + 1, 0), it(n + 1, 0), bt(n + 1, 0), cc(n + 1, 0);
+    vector<double> rs(n + 1);
+    vector<long long> dp0(n + 1, 0), dp1(n + 1, 0);
+    F_n.reserve(n + 1); bfs.reserve(n + 1);
+    long long bs = -1, cs;
+    auto t0 = chrono::steady_clock::now();
+    int tk = 0, iters = 0;
+    while (true) {
+        if ((++iters & 15) == 0) {
+            auto now = chrono::steady_clock::now();
+            if (chrono::duration_cast<chrono::seconds>(now - t0).count() >= tl) break;
         }
-    };
-    
-    auto rem = [&](int u) {
-        in[u] = 0;
-        cur_score -= s[u];
-        for (int i = head[u]; i < head[u + 1]; ++i) {
-            int v = to[i];
-            cc[v]--;
-            cxor[v] ^= u;
-            if (!in[v] && cc[v] <= 1) aq.push_back(v);
-        }
-    };
-    
-    vector<int> ord(n);
-    iota(ord.begin(), ord.end(), 1);
-    vector<double> sc(n + 1);
-    
-    for (int i = 1; i <= n; ++i) sc[i] = (double)s[i] / (head[i + 1] - head[i] + 1);
-    
-    sort(ord.begin(), ord.end(), [&](int a, int b) { return sc[a] > sc[b]; });
-    
-    for (int i : ord) {
-        if (cc[i] == 0) add(i);
-    }
-    
-    best_score = cur_score;
-    best_in = in;
-    
-    while (chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - t0).count() < time_limit) {
         for (int i = 1; i <= n; ++i) {
-            if (in[i] && (fast_rand() % 100 < 10)) rem(i);
+            rs[i] = beta[i] * (0.8 + 0.4 * (fr() / (double)UINT32_MAX));
+            ord[i] = i;
         }
-            
+        sort(ord.begin() + 1, ord.end(), [&](int a, int b) { return rs[a] > rs[b]; });
+        for (int u : F_n) in_F[u] = 0;
+        F_n.clear();
         for (int i = 1; i <= n; ++i) {
-            if (!in[i] && cc[i] <= 1) aq.push_back(i);
+            int u = ord[i], c = 0;
+            for (int v : g[u]) if (in_F[v] && ++c > 1) break;
+            if (c <= 1) { in_F[u] = 1; F_n.push_back(u); }
         }
-            
-        while (!aq.empty()) {
-            int v = aq.back();
-            aq.pop_back();
-            
-            if (!in[v]) {
-                if (cc[v] == 0) {
-                    add(v);
-                } else if (cc[v] == 1) {
-                    int u = cxor[v];
-                    if (s[v] > s[u]) {
-                        rem(u);
-                        add(v);
+        tk++; bfs.clear();
+        for (int i : F_n) {
+            if (vs[i] != tk) {
+                int st = bfs.size();
+                bfs.push_back(i); vs[i] = tk; par[i] = 0;
+                for (int p = st; p < (int)bfs.size(); ++p) {
+                    int u = bfs[p];
+                    for (int v : g[u]) {
+                        if (in_F[v] && vs[v] != tk) {
+                            vs[v] = tk; par[v] = u; bfs.push_back(v);
+                        }
                     }
                 }
             }
         }
-        
-        if (cur_score > best_score) {
-            best_score = cur_score;
-            best_in = in;
-        } else {
-            fill(in.begin(), in.end(), 0);
-            fill(cc.begin(), cc.end(), 0);
-            fill(cxor.begin(), cxor.end(), 0);
-            cur_score = 0;
-            for (int i = 1; i <= n; ++i) {
-                if (best_in[i]) add(i);
-            }
-        }
-    }
-    
-    cout << best_score << "\n";
-    
-    vector<int> ans;
-    for (int i = 1; i <= n; ++i) {
-        if (best_in[i]) ans.push_back(i);
-    }
-        
-    for (size_t i = 0; i < ans.size(); ++i) {
-        cout << ans[i] << (i + 1 == ans.size() ? "" : " ");
-    }
-    cout << "\n";
-    
-    bool valid = true;
-    for (int u = 1; u <= n; ++u) {
-        if (best_in[u]) {
-            for (int i = head[u]; i < head[u + 1]; ++i) {
-                if (best_in[to[i]]) {
-                    valid = false;
-                    break;
+        for (int i = (int)bfs.size() - 1; i >= 0; --i) {
+            int u = bfs[i];
+            dp0[u] = 0; dp1[u] = s[u];
+            for (int v : g[u]) {
+                if (in_F[v] && par[v] == u) {
+                    dp0[u] += max(dp0[v], dp1[v]);
+                    dp1[u] += dp0[v];
                 }
             }
         }
-        if (!valid) break;
+        for (int u : F_n) ex[u] = 0;
+        fill(it.begin(), it.end(), 0);
+        fill(cc.begin(), cc.end(), 0);
+        cs = 0;
+        for (int u : bfs) {
+            if (!ex[u] && dp1[u] > dp0[u]) {
+                it[u] = 1; cs += s[u];
+                for (int v : g[u]) {
+                    cc[v]++;
+                    if (in_F[v] && par[v] == u) ex[v] = 1;
+                }
+            }
+        }
+        for (int i = 1; i <= n; ++i) {
+            if (!it[i] && cc[i] == 0) {
+                it[i] = 1; cs += s[i];
+                for (int v : g[i]) cc[v]++;
+            }
+        }
+        if (cs > bs) { bs = cs; bt = it; }
     }
-    
-    if (!valid) {
-        cout << "team not valid\n";
+    cout << bs << "\n";
+    bool f = true;
+    for (int i = 1; i <= n; ++i) {
+        if (bt[i]) {
+            if (!f) cout << " ";
+            cout << i;
+            f = false;
+        }
     }
-    
+    cout << "\n";
     return 0;
 }
