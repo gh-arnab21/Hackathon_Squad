@@ -43,7 +43,9 @@ int main(int argc, char** argv) {
             if (chrono::duration_cast<chrono::seconds>(now - t0).count() >= tl) break;
         }
         for (int i = 1; i <= n; ++i) {
-            rs[i] = beta[i] * (0.8 + 0.4 * (fr() / (double)UINT32_MAX));
+            if (iters % 8 == 0) rs[i] = beta[i] + i * 1e-9;
+            else if (iters % 8 == 1) rs[i] = beta[i] + (n - i) * 1e-9;
+            else rs[i] = beta[i] * (0.8 + 0.4 * (fr() / (double)UINT32_MAX));
             ord[i] = i;
         }
         sort(ord.begin() + 1, ord.end(), [&](int a, int b) { return rs[a] > rs[b]; });
