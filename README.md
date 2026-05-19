@@ -80,13 +80,13 @@ git clone [https://github.com/yourusername/mwis-optimizer.git](https://github.co
 cd mwis-optimizer
 
 ```
-## Run the Benchmark Suite:
+**2. Run the Benchmark Suite:**
 
 ```bash
 ./run_tests.ps1
 ```
 
-## Generate Final Output Files::
+**3. Generate Final Output Files:**
 
 ```bash
 ./generate_outputs.ps1
