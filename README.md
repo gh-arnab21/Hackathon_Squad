@@ -78,3 +78,18 @@ Used for packaging the final results. This script runs the engine against all in
 ```bash
 git clone [https://github.com/yourusername/mwis-optimizer.git](https://github.com/yourusername/mwis-optimizer.git)
 cd mwis-optimizer
+
+```
+## Run the Benchmark Suite:
+
+```bash
+./run_tests.ps1
+```
+
+## Generate Final Output Files::
+
+```bash
+./generate_outputs.ps1
+```
+
+
