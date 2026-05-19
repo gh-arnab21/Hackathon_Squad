@@ -24,7 +24,7 @@ graph TD
     E --> F
     F --> G[FR14 Forest Filter]
     G --> H[Extract Cycle-Free Sub-Forest F]
-    H --> I[Exact Tree Dynamic Programming O_v]
+    H --> I[Exact Tree Dynamic Programming O(v)]
     I --> J[Greedy Patch on Remaining Vertices]
     J --> K[Update Global High Score]
     K --> L{Execution < 295 Seconds?}
