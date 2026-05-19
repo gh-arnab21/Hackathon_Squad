@@ -35,10 +35,7 @@ graph TD
     style M fill:#0366d6,stroke:#005cc5,stroke-width:2px,color:#fff
 
 
-1. [cite_start]**Heuristic Permutation:** Nodes are assigned a noisy score $\beta_i = \left( \frac{S[i]}{deg(i) + 1} \right) \times \text{noise}(0.8, 1.2)$[cite: 28]. [cite_start]For uniform-weight subgraphs, deterministic forward/backward sweeps are applied instead of noise to prevent the structure from shattering[cite: 28].
-2. [cite_start]**FR14 Forest Filter:** Iterating through the sorted nodes, a vertex $u$ is added to a set $F$ only if it connects to $\le 1$ node already in $F$[cite: 29]. [cite_start]This mathematically guarantees the induced graph is a cycle-free forest[cite: 29].
-3. [cite_start]**Exact Tree DP:** A post-order traversal DP calculates the exact optimal MWIS for the extracted forest[cite: 30].
-4. [cite_start]**Greedy Patch:** A final $O(1)$ sweep gathers any remaining vertices in the original graph that do not conflict with the optimal forest team[cite: 34].
+```
 
 ---
 
